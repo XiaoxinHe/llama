@@ -1,0 +1,70 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
+
+from typing import Optional
+
+import fire
+import numpy as np
+from llama import Llama
+import json
+from tqdm import tqdm
+import pandas as pd
+import os
+from utils.load_arxiv import get_raw_text_arxiv
+
+# CoT
+PROMPT = "Question: Which arXiv CS sub-category does this paper belong to? Give 5 likely arXiv CS sub-categories as a comma-separated list ordered from most to least likely, in the form \"cs.XX\". Please think about the categorization in a step by step manner and avoid making false associations. Then provide your reasoning."
+
+dataset = 'ogbn-arxiv'
+
+
+def main(
+    ckpt_dir: str,
+    tokenizer_path: str,
+    temperature: float = 0.0,
+    top_p: float = 0.9,
+    max_seq_len: int = 1024,
+    max_batch_size: int = 4,
+    # max_gen_len: Optional[int] = None,
+    max_gen_len: int = 2048,
+    START: int = 0,
+    END: int = 10000,
+):
+
+    generator = Llama.build(
+        ckpt_dir=ckpt_dir,
+        tokenizer_path=tokenizer_path,
+        max_seq_len=max_seq_len,
+        max_batch_size=max_batch_size,
+    )
+
+    data, text = get_raw_text_arxiv(use_text=True, seed=0)
+
+    for nid in range(START, END):
+        if not os.path.isfile(f'output/{dataset}/{nid}.json'):
+            START = nid
+            break
+
+    print(f"START: {START}, END: {END}")
+    prompts = [
+        f"Title: {ti[:50]}\nAbstract: {ab[:150]}...\n{PROMPT}" for ti, ab in text]
+    dialogs = [[{'role': 'user', 'content': p}] for p in prompts[START:END]]
+    nids = np.arange(START, END)
+    for i in tqdm(range(0, len(dialogs), max_batch_size)):
+        batch_dialogs = dialogs[i:i+max_batch_size]
+        batch_nids = nids[i:i+max_batch_size]
+        results = generator.chat_completion(
+            batch_dialogs,  # type: ignore
+            max_gen_len=max_gen_len,
+            temperature=temperature,
+            top_p=top_p,
+        )
+
+        for nid, dialog, result in zip(batch_nids, batch_dialogs, results):
+            result['prompt'] = dialog
+            with open(f'output/{dataset}/{nid}.json', 'w')as f:
+                json.dump(result, f, indent=4)
+
+
+if __name__ == "__main__":
+    fire.Fire(main)
