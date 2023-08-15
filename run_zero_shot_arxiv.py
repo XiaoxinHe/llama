@@ -13,7 +13,11 @@ import os
 from utils.load_arxiv import get_raw_text_arxiv
 
 # CoT
-PROMPT = "Question: Which arXiv CS sub-category does this paper belong to? Give 5 likely arXiv CS sub-categories as a comma-separated list ordered from most to least likely, in the form \"cs.XX\". Please think about the categorization in a step by step manner and avoid making false associations. Then provide your reasoning."
+# PROMPT = "Question: Which arXiv CS sub-category does this paper belong to? Give 5 likely arXiv CS sub-categories as a comma-separated list ordered from most to least likely, in the form \"cs.XX\". Please think about the categorization in a step by step manner and avoid making false associations. Then provide your reasoning."
+
+# Text
+PROMPT = "Question: Which arXiv CS sub-category does this paper belong to? Give 5 likely arXiv CS sub-categories as a comma-separated list ordered from most to least likely, in the form \"cs.XX\". Focus only on content in the actual text and avoid making false associations. Then provide your reasoning."
+
 
 dataset = 'ogbn-arxiv'
 
