@@ -45,7 +45,7 @@ def main(
 
     _, text = get_raw_text(use_text=True, seed=0)
 
-    END = max(END, len(text))
+    END = min(END, len(text))
     for nid in range(START, END):
         if not os.path.isfile(f'output/{dataset}/{nid}.json'):
             START = nid
